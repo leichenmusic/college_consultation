@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>蕾拉酱 · AI音乐留学助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="main-container">
+        <!-- 左侧信息栏 -->
+        <div class="left-panel">
+            <div class="avatar-section">
+                <div class="avatar-placeholder">
+                    <img src="{{ url_for('static', filename='images/layla_avatar.png') }}" alt="蕾拉酱头像" class="avatar-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiByeD0iNjAiIGZpbGw9IiM5QjU5QjYiLz4KPGNpcmNsZSBjeD0iNjAiIGN5PSI0NSIgcj0iMjAiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yMCA5NUMyMCA4MCA0MCA2NSA2MCA2NVM4MCA4MCA4MCA5NSIgZmlsbD0id2hpdGUiLz4KPC9zdmc+'">
+                </div>
+                <div class="avatar-text">蕾拉酱 · AI音乐留学助手</div>
+            </div>
+            <div class="info-section">
+                <h2>音乐留学智能咨询</h2>
+                <p>蕾拉酱 · AI助手会通过轻松对话了解您的音乐背景，为您制定个性化的音乐留学方案</p>
+                <div class="features">
+                    <div class="feature-item">🎵 音乐专业咨询</div>
+                    <div class="feature-item">🎯 个性化院校推荐</div>
+                    <div class="feature-item">🌍 全球音乐学院指导</div>
+                    <div class="feature-item">🎤 语音输入支持</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧聊天区域 -->
+        <div class="right-panel">
+            <!-- 用户信息栏 -->
+            <div class="user-info-bar" id="user-info-bar" style="display: none;">
+                <div class="user-info">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name" id="user-name">用户名</span>
+                        <span class="user-status">已登录</span>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <button class="user-menu-btn" onclick="toggleUserMenu()">⋯</button>
+                    <div class="user-menu" id="user-menu" style="display: none;">
+                        <a href="/logout" class="menu-item">登出</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 聊天界面 -->
+            <div class="chat-container" id="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                </div>
+                <div class="loading-indicator" id="loading">
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="chat-input">
+                    <form id="chat-form">
+                        <input type="text" id="message-input" placeholder="输入您的问题或点击麦克风说话..." autocomplete="off">
+                        <button type="button" id="mic-button" class="mic-button" title="点击开始语音输入">
+                            🎤
+                        </button>
+                        <button type="submit">发送</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 表单界面 -->
+            <div class="form-container-embedded" id="form-container" style="display: none;">
+                <div class="form-header">
+                    <h3>🎵 音乐留学咨询表单</h3>
+                    <button class="back-to-chat-btn" onclick="switchToChat()">返回对话</button>
+                </div>
+                <div class="form-body">
+                    <form id="embedded-form" action="/submit_form" method="post">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="form-name">称呼*</label>
+                                <input type="text" id="form-name" name="name" placeholder="请输入您的姓名或昵称" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-age_range">年龄段</label>
+                                <select id="form-age_range" name="age_range">
+                                    <option value="">请选择</option>
+                                    <option value="≤15">≤15</option>
+                                    <option value="16–18">16–18</option>
+                                    <option value="19–22">19–22</option>
+                                    <option value="23–26">23–26</option>
+                                    <option value="27–30">27–30</option>
+                                    <option value="30+">30+</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-gender">性别</label>
+                                <select id="form-gender" name="gender">
+                                    <option value="">请选择</option>
+                                    <option value="女">女</option>
+                                    <option value="男">男</option>
+                                    <option value="非二元/不便透露">非二元/不便透露</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-current_grade">当前学段*</label>
+                                <select id="form-current_grade" name="current_grade" required>
+                                    <option value="">请选择</option>
+                                    <option value="初中">初中</option>
+                                    <option value="高中">高中</option>
+                                    <option value="本科在读">本科在读</option>
+                                    <option value="本科已毕业">本科已毕业</option>
+                                    <option value="研究生">研究生</option>
+                                    <option value="在职提升">在职提升</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-current_major">当前专业方向</label>
+                                <select id="form-current_major" name="current_major">
+                                    <option value="">请选择</option>
+                                    <option value="声乐">声乐</option>
+                                    <option value="器乐">器乐</option>
+                                    <option value="作曲/指挥/音乐教育">作曲/指挥/音乐教育</option>
+                                    <option value="音乐技术/音乐产业">音乐技术/音乐产业</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-target_major">目标申请专业</label>
+                                <select id="form-target_major" name="target_major" multiple>
+                                    <option value="声乐表演">声乐表演</option>
+                                    <option value="音乐剧">音乐剧</option>
+                                    <option value="器乐表演">器乐表演</option>
+                                    <option value="作曲/编曲">作曲/编曲</option>
+                                    <option value="指挥">指挥</option>
+                                    <option value="音乐教育">音乐教育</option>
+                                    <option value="音乐科技/制作">音乐科技/制作</option>
+                                    <option value="音乐商业/管理">音乐商业/管理</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-countries">意向国家/地区</label>
+                                <select id="form-countries" name="countries" multiple>
+                                    <option value="美国">🇺🇸 美国</option>
+                                    <option value="英国">🇬🇧 英国</option>
+                                    <option value="意大利">🇮🇹 意大利</option>
+                                    <option value="德国">🇩🇪 德国</option>
+                                    <option value="法国">🇫🇷 法国</option>
+                                    <option value="加拿大">🇨🇦 加拿大</option>
+                                    <option value="澳大利亚">🇦🇺 澳大利亚</option>
+                                    <option value="西班牙">🇪🇸 西班牙</option>
+                                    <option value="荷兰">🇳🇱 荷兰</option>
+                                    <option value="奥地利">🇦🇹 奥地利</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-intake_term">计划入学时间</label>
+                                <select id="form-intake_term" name="intake_term">
+                                    <option value="">请选择</option>
+                                    <option value="2025 Fall">2025 Fall</option>
+                                    <option value="2026 Fall">2026 Fall</option>
+                                    <option value="2027 Fall">2027 Fall</option>
+                                    <option value="2026 Spring">2026 Spring</option>
+                                    <option value="待定">待定</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-budget_cny_range">预算区间（万元人民币）</label>
+                                <select id="form-budget_cny_range" name="budget_cny_range">
+                                    <option value="">请选择</option>
+                                    <option value="≤30">≤30万</option>
+                                    <option value="30–60">30–60万</option>
+                                    <option value="60–100">60–100万</option>
+                                    <option value="100–150">100–150万</option>
+                                    <option value="≥150">≥150万</option>
+                                    <option value="待定">待定</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="form-special_requests">特殊诉求（可多选）</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="学校推荐"> 学校推荐</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="国家推荐"> 国家推荐</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="教授推荐/试音"> 教授推荐/试音机会</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="奖学金策略"> 奖学金策略</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="语言/考试辅导"> 语言/考试辅导</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="作品集/曲目/录制"> 作品集/曲目选择与录制</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="面试/试音模拟"> 面试/试音模拟</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="时间线提醒/清单"> 时间线提醒/清单</label>
+                                <label class="checkbox-item"><input type="checkbox" name="special_requests" value="宿舍/生活指导"> 宿舍/生活指导</label>
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="form-contact_method">后续联系方式</label>
+                            <select id="form-contact_method" name="contact_method">
+                                <option value="">请选择</option>
+                                <option value="邮箱">邮箱</option>
+                                <option value="微信">微信</option>
+                                <option value="手机">手机</option>
+                                <option value="都可以">都可以</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="form-notes">其他备注</label>
+                            <textarea id="form-notes" name="notes" rows="3" placeholder="有什么特别想了解的问题或其他需要说明的..."></textarea>
+                        </div>
+                        <div class="form-group full-width button-group">
+                            <div class="form-buttons">
+                                <button type="submit" class="submit-btn">🎵 提交</button>
+                                <button type="button" class="back-btn" onclick="switchToChat()">返回对话</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

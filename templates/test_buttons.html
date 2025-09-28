@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试按钮功能</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="main-container">
+        <div class="left-panel">
+            <h2>按钮功能测试</h2>
+            <p>这个页面用来测试选择题按钮是否正常工作</p>
+        </div>
+        
+        <div class="right-panel">
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message gemini-message">
+                        <p>你现在在读什么学历呢？</p>
+                        <div class="choice-buttons">
+                            <button class="choice-btn" onclick="testClick('高中在读')">高中在读</button>
+                            <button class="choice-btn" onclick="testClick('本科在读')">本科在读</button>
+                            <button class="choice-btn" onclick="testClick('硕士在读')">硕士在读</button>
+                            <button class="choice-btn" onclick="testClick('已经毕业')">已经毕业</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function testClick(choice) {
+            alert('你选择了: ' + choice);
+            // 禁用所有按钮并高亮选中的
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === choice) {
+                    btn.classList.add('selected');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

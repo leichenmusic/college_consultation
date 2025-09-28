@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google登录快速测试</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .google-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .google-btn:hover {
+            background: #357ae8;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .step { margin: 10px 0; padding: 10px; background: #f8f9fa; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Google登录快速测试</h1>
+        
+        <div class="info">
+            <h3>📋 测试说明</h3>
+            <p>这是一个独立的HTML文件，用于测试Google OAuth 2.0登录功能。</p>
+            <p><strong>请按照以下步骤操作：</strong></p>
+        </div>
+        
+        <div class="step">
+            <h4>步骤1: 配置Client ID</h4>
+            <p>在下面的输入框中输入您的Google Client ID：</p>
+            <input type="text" id="clientIdInput" placeholder="441811058259-avff65fu8ampcegg3vd3ue7fgdnhqv5ek.apps.googleusercontent.com" style="width: 100%; padding: 8px; margin: 5px 0;">
+            <button onclick="setClientId()" class="google-btn">设置Client ID</button>
+        </div>
+        
+        <div class="step">
+            <h4>步骤2: 测试Google登录</h4>
+            <div id="g_id_onload" style="display: none;"></div>
+            <button class="google-btn" onclick="initGoogleLogin()" id="loginBtn" disabled>
+                🔐 初始化Google登录
+            </button>
+            <button class="google-btn" onclick="triggerLogin()" id="triggerBtn" disabled>
+                🚀 触发Google登录
+            </button>
+            
+            <!-- 手动Google登录按钮容器 -->
+            <div id="manual-signin-container" style="display: none; margin-top: 15px;">
+                <p>如果上面的按钮没有反应，请使用下面的官方Google登录按钮：</p>
+                <div id="manual-signin-btn"></div>
+            </div>
+        </div>
+        
+        <div id="status"></div>
+        <div id="result"></div>
+        
+        <div class="info">
+            <h3>🔧 调试信息</h3>
+            <div id="debug"></div>
+        </div>
+        
+        <div class="warning">
+            <h4>⚠️ 如果没有反应，请检查：</h4>
+            <ul>
+                <li>Google Client ID是否正确</li>
+                <li>浏览器是否允许弹窗</li>
+                <li>网络连接是否正常</li>
+                <li>浏览器控制台是否有错误 (按F12查看)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        let currentClientId = '';
+        
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            statusDiv.innerHTML = `<div class="${className}">${message}</div>` + statusDiv.innerHTML;
+            console.log(message);
+        }
+        
+        function updateDebug(info) {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML = `<pre>${info}</pre>`;
+        }
+        
+        function setClientId() {
+            const input = document.getElementById('clientIdInput');
+            currentClientId = input.value.trim();
+            
+            if (!currentClientId) {
+                log('❌ 请输入Google Client ID', 'error');
+                return;
+            }
+            
+            if (!currentClientId.includes('.apps.googleusercontent.com')) {
+                log('⚠️ Client ID格式可能不正确，应该以.apps.googleusercontent.com结尾', 'warning');
+            }
+            
+            log(`✅ Client ID已设置: ${currentClientId.substring(0, 20)}...`, 'success');
+            document.getElementById('loginBtn').disabled = false;
+            
+            updateDebug(`Client ID: ${currentClientId}`);
+        }
+        
+        function initGoogleLogin() {
+            if (!currentClientId) {
+                log('❌ 请先设置Client ID', 'error');
+                return;
+            }
+            
+            log('🔄 正在初始化Google登录...', 'info');
+            
+            // 检查Google服务是否已加载
+            if (typeof google !== 'undefined') {
+                try {
+                    // 初始化Google Identity Services
+                    google.accounts.id.initialize({
+                        client_id: currentClientId,
+                        callback: handleGoogleSignin,
+                        auto_select: false,
+                        cancel_on_tap_outside: true
+                    });
+                    
+                    log('✅ Google Identity Services已初始化', 'success');
+                    document.getElementById('triggerBtn').disabled = false;
+                    
+                    updateDebug(`Google服务状态: 已初始化
+Client ID: ${currentClientId}
+回调函数: handleGoogleSignin
+API可用: ${typeof google.accounts.id.prompt !== 'undefined'}`);
+                    
+                } catch (error) {
+                    log(`❌ Google服务初始化失败: ${error.message}`, 'error');
+                }
+            } else {
+                log('⏳ 等待Google Identity Services加载...', 'info');
+                
+                // 等待Google服务加载
+                let attempts = 0;
+                const checkGoogle = setInterval(() => {
+                    attempts++;
+                    if (typeof google !== 'undefined') {
+                        clearInterval(checkGoogle);
+                        
+                        try {
+                            // 初始化Google Identity Services
+                            google.accounts.id.initialize({
+                                client_id: currentClientId,
+                                callback: handleGoogleSignin,
+                                auto_select: false,
+                                cancel_on_tap_outside: true
+                            });
+                            
+                            log('✅ Google Identity Services加载并初始化完成', 'success');
+                            document.getElementById('triggerBtn').disabled = false;
+                            
+                            updateDebug(`Google服务状态: 已加载并初始化 (${attempts}次检查后)
+Client ID: ${currentClientId}
+回调函数: handleGoogleSignin
+API可用: ${typeof google.accounts.id.prompt !== 'undefined'}`);
+                            
+                        } catch (error) {
+                            log(`❌ Google服务初始化失败: ${error.message}`, 'error');
+                        }
+                    } else if (attempts > 10) {
+                        clearInterval(checkGoogle);
+                        log('❌ Google Identity Services加载超时，请检查网络连接', 'error');
+                    }
+                }, 1000);
+            }
+        }
+        
+        function triggerLogin() {
+            if (typeof google === 'undefined') {
+                log('❌ Google Identity Services未加载', 'error');
+                return;
+            }
+            
+            log('🚀 触发Google登录...', 'info');
+            
+            // 直接显示Google官方登录按钮，这是最可靠的方法
+            try {
+                // 清空之前的按钮
+                document.getElementById('manual-signin-btn').innerHTML = '';
+                
+                // 渲染Google官方登录按钮
+                google.accounts.id.renderButton(
+                    document.getElementById('manual-signin-btn'),
+                    { 
+                        theme: 'filled_blue',
+                        size: 'large',
+                        type: 'standard',
+                        text: 'signin_with',
+                        shape: 'rectangular',
+                        logo_alignment: 'left',
+                        width: 300
+                    }
+                );
+                
+                // 显示登录按钮容器
+                document.getElementById('manual-signin-container').style.display = 'block';
+                log('✅ 已显示Google官方登录按钮，请点击进行登录', 'success');
+                
+                // 同时尝试自动提示（如果浏览器允许）
+                setTimeout(() => {
+                    try {
+                        google.accounts.id.prompt((notification) => {
+                            if (notification.isDisplayed()) {
+                                log('✅ Google自动登录提示已显示', 'success');
+                            } else if (notification.isNotDisplayed()) {
+                                log('ℹ️ Google自动提示被阻止，请使用下方按钮', 'info');
+                            } else if (notification.isSkippedMoment()) {
+                                log('ℹ️ Google自动提示被跳过，请使用下方按钮', 'info');
+                            }
+                        });
+                    } catch (promptError) {
+                        log(`ℹ️ 自动提示失败（正常情况），请使用下方按钮: ${promptError.message}`, 'info');
+                    }
+                }, 500);
+                
+            } catch (error) {
+                log(`❌ 显示Google登录按钮失败: ${error.message}`, 'error');
+                
+                // 最后的备用方案：显示简单的提示
+                document.getElementById('manual-signin-container').innerHTML = `
+                    <div class="error">
+                        <h4>❌ 无法显示Google登录按钮</h4>
+                        <p>可能的原因：</p>
+                        <ul>
+                            <li>浏览器阻止了弹窗</li>
+                            <li>网络连接问题</li>
+                            <li>Google服务暂时不可用</li>
+                        </ul>
+                        <p>请尝试：</p>
+                        <ol>
+                            <li>刷新页面重试</li>
+                            <li>检查浏览器弹窗设置</li>
+                            <li>确保网络连接正常</li>
+                        </ol>
+                    </div>
+                `;
+                document.getElementById('manual-signin-container').style.display = 'block';
+            }
+        }
+        
+        // Google登录回调函数
+        function handleGoogleSignin(response) {
+            log('🎉 Google登录成功！', 'success');
+            
+            try {
+                // 解析JWT token
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 登录成功！</h3>
+                        <p><strong>用户名:</strong> ${payload.name}</p>
+                        <p><strong>邮箱:</strong> ${payload.email}</p>
+                        <p><strong>头像:</strong> <img src="${payload.picture}" width="50" height="50" style="border-radius: 25px; vertical-align: middle;"></p>
+                        <details>
+                            <summary>详细用户信息</summary>
+                            <pre>${JSON.stringify(payload, null, 2)}</pre>
+                        </details>
+                        <details>
+                            <summary>完整Token</summary>
+                            <pre style="word-break: break-all;">${response.credential}</pre>
+                        </details>
+                    </div>
+                `;
+                
+                updateDebug(`登录成功！
+用户: ${payload.name} (${payload.email})
+Token长度: ${response.credential.length}字符`);
+                
+            } catch (error) {
+                log(`❌ 解析用户信息失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载完成后的检查
+        window.addEventListener('load', function() {
+            log('📄 页面已加载', 'info');
+            
+            // 预填Client ID（如果有的话）
+            const savedClientId = '441811058259-avff65fu8ampcegg3vd3ue7fgdnhqv5ek.apps.googleusercontent.com';
+            if (savedClientId && savedClientId !== 'your-client-id') {
+                document.getElementById('clientIdInput').value = savedClientId;
+                log('💡 已预填Client ID，点击"设置Client ID"按钮继续', 'info');
+            }
+            
+            // 检查Google脚本加载
+            setTimeout(() => {
+                if (typeof google !== 'undefined') {
+                    log('✅ Google Identity Services脚本已自动加载', 'success');
+                } else {
+                    log('⏳ Google Identity Services脚本正在加载...', 'info');
+                }
+            }, 2000);
+        });
+        
+        // 全局错误处理
+        window.addEventListener('error', function(e) {
+            log(`❌ 页面错误: ${e.message}`, 'error');
+        });
+    </script>
+</body>
+</html>
