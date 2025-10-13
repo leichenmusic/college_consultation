@@ -3,10 +3,13 @@ import requests # 导入 requests 库
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import re
 import logging
+import datetime
 from dotenv import load_dotenv
 from database import db_manager
 from admin import create_admin_routes
 from auth import auth_manager, User
+from pm_agent import get_pm_agent, analyze_session_for_insights
+from ai_conversation_optimizer import analyze_user_intent, generate_optimized_prompt
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import uuid
 
@@ -63,6 +66,51 @@ def get_or_create_session_id():
     return session['session_id']
 
 # --- 辅助函数 ---
+def generate_first_conversation_prompt(user_profile, user_intent_analysis):
+    """生成第一次对话的提示词"""
+    # 检查是否有历史对话记录（已登录用户可能有历史记录）
+    has_history = False
+    if current_user.is_authenticated:
+        try:
+            session_id = get_or_create_session_id()
+            recent_messages = db_manager.get_recent_messages(session_id, 5)
+            has_history = len(recent_messages) > 0
+        except:
+            has_history = False
+    
+    # 根据用户是否已登录和是否有历史记录调整开场白
+    if current_user.is_authenticated and user_profile.get('name'):
+        if has_history:
+            # 有历史记录的已登录用户
+            greeting = f"嗨～{user_profile['name']}！我是蕾拉酱的AI小助手 🎶 欢迎回来！"
+            next_question = "你想了解什么音乐留学问题呢？"
+            choices = "院校推荐|申请指导|作品集建议|费用咨询|填写表单"
+        else:
+            # 没有历史记录的已登录用户
+            greeting = f"嗨～{user_profile['name']}！我是蕾拉酱的AI小助手 🎶 欢迎来到音乐留学咨询！"
+            next_question = "你目前在读什么学段？"
+            choices = "初中|高中|本科在读|本科已毕业|研究生|在职提升|填写表单"
+    else:
+        # 未登录用户的开场白
+        greeting = "嗨～我是蕾拉酱的AI小助手 🎶 欢迎来到音乐留学咨询！"
+        next_question = "请问怎么称呼你？"
+        choices = "直接输入姓名|填写表单"
+    
+    return f"""
+你是「蕾拉酱的AI小助手」，专业音乐留学顾问。
+
+请发送开场白：
+{greeting}
+
+{next_question}
+
+[CHOICES]
+{choices}
+[/CHOICES]
+
+要求：简洁友好，不超过3行。
+"""
+
 def extract_user_info(user_message, current_profile):
     """从用户消息中提取并更新用户信息"""
     message_lower = user_message.lower().strip()
@@ -525,6 +573,10 @@ def ask():
         db_manager.save_user_profile(session_id, user_profile)
         print(f"已登录用户 {user_profile['name']} 的信息已自动填充")
     
+    # 🚀 智能分析用户意图
+    user_intent_analysis = analyze_user_intent(user_message, chat_history, user_profile)
+    print(f"用户意图分析: {user_intent_analysis}")
+    
     # 如果不是第一次对话，更新用户信息
     if chat_history and user_message:
         user_profile = extract_user_info(user_message, user_profile)
@@ -532,8 +584,15 @@ def ask():
         # 更新数据库中的用户信息
         db_manager.save_user_profile(session_id, user_profile)
     
-    prompt = ""
-    # 如果是第一次对话，构建详细的系统指令
+    # 🎯 使用优化的提示词生成系统
+    if not chat_history:
+        # 第一次对话的开场白
+        prompt = generate_first_conversation_prompt(user_profile, user_intent_analysis)
+    else:
+        # 后续对话使用智能提示词
+        prompt = generate_optimized_prompt(user_message, user_profile, chat_history, user_intent_analysis)
+
+    # 构建发送到代理服务器的 payload
     if not chat_history:
         # 检查是否有历史对话记录（已登录用户可能有历史记录）
         has_history = False
@@ -640,8 +699,9 @@ def ask():
     else:
         # 后续对话，包含历史记录
         contents = []
-        # 添加历史记录
-        for msg in chat_history:
+        # 📊 只保留最近10轮对话，避免token过多，提升响应速度
+        recent_history = chat_history[-10:] if len(chat_history) > 10 else chat_history
+        for msg in recent_history:
             contents.append(msg)
         # 添加当前用户消息
         contents.append({
@@ -660,9 +720,8 @@ def ask():
         )
         
         # 打印调试信息
-        print(f"Request payload: {payload}")
+        print(f"Intent: {user_intent_analysis['primary_intent']}, Profile completeness: {user_intent_analysis['profile_completeness']:.2f}")
         print(f"Response status: {response.status_code}")
-        print(f"Response text: {response.text}")
         
         response.raise_for_status() 
         api_response_data = response.json()
@@ -946,8 +1005,196 @@ def get_chat_history():
         }), 500
 
 
+# === PM Agent Routes ===
+
+@app.route("/pm/dashboard")
+@login_required
+def pm_dashboard():
+    """PM Dashboard - requires admin access"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    return render_template('pm_dashboard.html')
+
+@app.route("/api/pm/analysis")
+@login_required
+def pm_analysis():
+    """Get strategic analysis from PM agent"""
+    if not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        analysis = pm_agent.generate_strategic_analysis()
+        return jsonify({
+            "success": True,
+            "analysis": analysis
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route("/api/pm/roadmap")
+@login_required
+def pm_roadmap():
+    """Get product roadmap"""
+    if not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        roadmap = pm_agent.get_product_roadmap()
+        # Convert dataclasses to dicts for JSON serialization
+        json_roadmap = {}
+        for status, features in roadmap.items():
+            json_roadmap[status] = [
+                {
+                    "id": f.id,
+                    "name": f.name,
+                    "description": f.description,
+                    "priority": f.priority.value,
+                    "status": f.status.value,
+                    "estimated_effort": f.estimated_effort,
+                    "business_value": f.business_value,
+                    "target_users": f.target_users,
+                    "success_metrics": f.success_metrics,
+                    "dependencies": f.dependencies,
+                    "created_date": f.created_date,
+                    "target_launch": f.target_launch,
+                    "owner": f.owner
+                } for f in features
+            ]
+        
+        return jsonify({
+            "success": True,
+            "roadmap": json_roadmap
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route("/api/pm/features", methods=["POST"])
+@login_required
+def add_feature():
+    """Add a new feature to the roadmap"""
+    if not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        feature_data = request.json
+        feature = pm_agent.add_feature(feature_data)
+        
+        return jsonify({
+            "success": True,
+            "feature": {
+                "id": feature.id,
+                "name": feature.name,
+                "description": feature.description,
+                "priority": feature.priority.value,
+                "status": feature.status.value,
+                "estimated_effort": feature.estimated_effort,
+                "business_value": feature.business_value,
+                "target_users": feature.target_users,
+                "success_metrics": feature.success_metrics,
+                "dependencies": feature.dependencies,
+                "created_date": feature.created_date,
+                "target_launch": feature.target_launch,
+                "owner": feature.owner
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route("/api/pm/features/<feature_id>/status", methods=["PUT"])
+@login_required
+def update_feature_status(feature_id):
+    """Update feature status"""
+    if not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        from pm_agent import FeatureStatus
+        new_status = FeatureStatus(request.json.get('status'))
+        success = pm_agent.update_feature_status(feature_id, new_status)
+        
+        return jsonify({
+            "success": success,
+            "message": f"Feature {feature_id} status updated to {new_status.value}" if success else "Feature not found"
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route("/api/pm/insights")
+@login_required
+def pm_insights():
+    """Get user behavior insights"""
+    if not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        # Analyze current session for insights
+        session_data = {
+            "user_profile": session.get('user_profile', {}),
+            "chat_history": []  # Could be enhanced to include recent chat data
+        }
+        
+        insights = analyze_session_for_insights(session_data, db_manager)
+        
+        return jsonify({
+            "success": True,
+            "insights": insights
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route("/api/pm/export/<format>")
+@login_required
+def export_roadmap(format):
+    """Export roadmap in specified format"""
+    if not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    try:
+        if format not in ["json", "markdown"]:
+            return jsonify({"error": "Unsupported format"}), 400
+        
+        content = pm_agent.export_roadmap(format)
+        
+        if format == "json":
+            return jsonify({
+                "success": True,
+                "content": content,
+                "filename": f"roadmap_{datetime.datetime.now().strftime('%Y%m%d')}.json"
+            })
+        else:
+            return jsonify({
+                "success": True,
+                "content": content,
+                "filename": f"roadmap_{datetime.datetime.now().strftime('%Y%m%d')}.md"
+            })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 # 添加管理后台路由
 create_admin_routes(app)
+
+# 初始化PM Agent
+pm_agent = get_pm_agent(db_manager)
 
 if __name__ == "__main__":
     # For local development

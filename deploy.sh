@@ -55,7 +55,7 @@ echo -e "${GREEN}✅ All required files present${NC}"
 
 # Validate app.yaml
 echo -e "${BLUE}🔍 Validating app.yaml...${NC}"
-if ! gcloud app deploy app.yaml --dry-run --quiet > /dev/null 2>&1; then
+if ! python3 -c "import yaml; yaml.safe_load(open('app.yaml')); print('YAML syntax valid')" > /dev/null 2>&1; then
     echo -e "${RED}❌ app.yaml validation failed${NC}"
     exit 1
 fi

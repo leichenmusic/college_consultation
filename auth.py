@@ -28,6 +28,7 @@ class User(UserMixin):
         self._is_active = user_data.get('is_active', True)  # 使用私有属性存储
         self.email_verified = user_data.get('email_verified', False)
         self.created_at = user_data.get('created_at')
+        self.is_admin = user_data.get('is_admin', False)  # Add admin flag
     
     @property
     def is_active(self):

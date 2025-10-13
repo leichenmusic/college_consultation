@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM Dashboard - 蕾拉酱的AI留学顾问</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* PM Dashboard Specific Styles */
+        .pm-dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-title {
+            font-size: 2.5em;
+            color: #4a5568;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .dashboard-subtitle {
+            color: #718096;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-size: 1.4em;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .roadmap-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .roadmap-columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .roadmap-column {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .column-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .column-now { background: #fed7d7; color: #c53030; }
+        .column-next { background: #feebc8; color: #dd6b20; }
+        .column-later { background: #e6fffa; color: #00a3c4; }
+        .column-launched { background: #c6f6d5; color: #38a169; }
+
+        .feature-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .feature-title {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .feature-description {
+            color: #718096;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .feature-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8em;
+        }
+
+        .priority-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.7em;
+        }
+
+        .priority-critical { background: #fed7d7; color: #c53030; }
+        .priority-high { background: #feebc8; color: #dd6b20; }
+        .priority-medium { background: #bee3f8; color: #3182ce; }
+        .priority-low { background: #e6fffa; color: #00a3c4; }
+
+        .insights-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .insight-item {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .insight-text {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .insight-actions {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .recommendations {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .recommendation-item {
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .roadmap-columns {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pm-dashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">📊 Product Manager Dashboard</h1>
+            <p class="dashboard-subtitle">Strategic insights and product management for 蕾拉酱的AI留学顾问</p>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="refreshAnalysis()">🔄 Refresh Analysis</button>
+                <button class="btn btn-secondary" onclick="exportRoadmap('markdown')">📋 Export Roadmap</button>
+                <button class="btn btn-secondary" onclick="exportRoadmap('json')">💾 Export JSON</button>
+                <a href="/" class="btn btn-secondary">🏠 Back to Chat</a>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading PM insights...</p>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div id="metrics-section" class="dashboard-grid" style="display: none;">
+            <div class="dashboard-card">
+                <h2 class="card-title">📈 Key Metrics</h2>
+                <div id="metrics-grid" class="metric-grid">
+                    <!-- Metrics will be populated here -->
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h2 class="card-title">🎯 Strategic Overview</h2>
+                <div id="strategic-overview">
+                    <!-- Strategic data will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Roadmap -->
+        <div id="roadmap-section" class="roadmap-section" style="display: none;">
+            <h2 class="card-title">🗺️ Product Roadmap</h2>
+            <div class="roadmap-columns">
+                <div class="roadmap-column">
+                    <div class="column-title column-now">🚀 In Progress</div>
+                    <div id="roadmap-now"></div>
+                </div>
+                <div class="roadmap-column">
+                    <div class="column-title column-next">📋 Planned Next</div>
+                    <div id="roadmap-next"></div>
+                </div>
+                <div class="roadmap-column">
+                    <div class="column-title column-later">🔮 Future</div>
+                    <div id="roadmap-later"></div>
+                </div>
+                <div class="roadmap-column">
+                    <div class="column-title column-launched">✅ Launched</div>
+                    <div id="roadmap-launched"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div id="insights-section" class="insights-section" style="display: none;">
+            <h2 class="card-title">💡 User Insights & Recommendations</h2>
+            <div id="insights-content">
+                <!-- Insights will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAnalysis = null;
+        let currentRoadmap = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+        });
+
+        async function loadDashboard() {
+            try {
+                // Load analysis and roadmap in parallel
+                const [analysisResponse, roadmapResponse, insightsResponse] = await Promise.all([
+                    fetch('/api/pm/analysis'),
+                    fetch('/api/pm/roadmap'),
+                    fetch('/api/pm/insights')
+                ]);
+
+                if (analysisResponse.ok && roadmapResponse.ok && insightsResponse.ok) {
+                    const analysisData = await analysisResponse.json();
+                    const roadmapData = await roadmapResponse.json();
+                    const insightsData = await insightsResponse.json();
+
+                    currentAnalysis = analysisData.analysis;
+                    currentRoadmap = roadmapData.roadmap;
+
+                    renderMetrics(currentAnalysis);
+                    renderRoadmap(currentRoadmap);
+                    renderInsights(insightsData.insights, currentAnalysis.recommendations);
+
+                    // Hide loading and show content
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('metrics-section').style.display = 'grid';
+                    document.getElementById('roadmap-section').style.display = 'block';
+                    document.getElementById('insights-section').style.display = 'block';
+                } else {
+                    throw new Error('Failed to load dashboard data');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('loading').innerHTML = `
+                    <p style="color: #e53e3e;">❌ Error loading dashboard: ${error.message}</p>
+                    <button class="btn btn-primary" onclick="loadDashboard()">🔄 Retry</button>
+                `;
+            }
+        }
+
+        function renderMetrics(analysis) {
+            const metricsGrid = document.getElementById('metrics-grid');
+            const strategicOverview = document.getElementById('strategic-overview');
+
+            // Render key metrics
+            const metrics = analysis.metrics || [];
+            metricsGrid.innerHTML = metrics.map(metric => `
+                <div class="metric-item">
+                    <div class="metric-value">${metric.value}${metric.unit === 'percentage' ? '%' : ''}</div>
+                    <div class="metric-label">${metric.name}</div>
+                </div>
+            `).join('');
+
+            // Render strategic overview
+            const roadmapSummary = analysis.roadmap_summary || {};
+            const effortAnalysis = analysis.effort_analysis || {};
+            
+            strategicOverview.innerHTML = `
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value">${roadmapSummary.launched || 0}</div>
+                        <div class="metric-label">Launched Features</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${roadmapSummary.in_progress || 0}</div>
+                        <div class="metric-label">In Progress</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${roadmapSummary.planned_next || 0}</div>
+                        <div class="metric-label">Planned Next</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${Math.round(effortAnalysis.total_remaining_effort || 0)}</div>
+                        <div class="metric-label">Story Points</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRoadmap(roadmap) {
+            const sections = ['now', 'next', 'later', 'launched'];
+            
+            sections.forEach(section => {
+                const container = document.getElementById(`roadmap-${section}`);
+                const features = roadmap[section] || [];
+                
+                container.innerHTML = features.map(feature => `
+                    <div class="feature-item">
+                        <div class="feature-title">${feature.name}</div>
+                        <div class="feature-description">${feature.description}</div>
+                        <div class="feature-meta">
+                            <span class="priority-badge priority-${feature.priority}">${feature.priority.toUpperCase()}</span>
+                            <span>${feature.estimated_effort} pts</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                if (features.length === 0) {
+                    container.innerHTML = '<p style="color: #a0aec0; text-align: center; padding: 20px;">No features</p>';
+                }
+            });
+        }
+
+        function renderInsights(insights, recommendations) {
+            const insightsContent = document.getElementById('insights-content');
+            
+            let content = '';
+            
+            // Render recommendations
+            if (recommendations && recommendations.length > 0) {
+                content += `
+                    <div class="recommendations">
+                        <h3 style="margin-bottom: 15px; color: #2d3748;">🎯 Strategic Recommendations</h3>
+                        ${recommendations.map(rec => `
+                            <div class="recommendation-item">• ${rec}</div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // Render insights
+            if (insights && insights.insights && insights.insights.length > 0) {
+                content += `
+                    <h3 style="margin: 20px 0 15px 0; color: #2d3748;">💡 User Behavior Insights</h3>
+                    ${insights.insights.map(insight => `
+                        <div class="insight-item">
+                            <div class="insight-text">${insight.insight}</div>
+                            <div class="insight-actions">
+                                <strong>Actions:</strong> ${insight.actionable_items.join(', ')}
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                content += `
+                    <div style="text-align: center; padding: 40px; color: #a0aec0;">
+                        📊 No user insights available yet. More data needed for analysis.
+                    </div>
+                `;
+            }
+            
+            insightsContent.innerHTML = content;
+        }
+
+        async function refreshAnalysis() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('metrics-section').style.display = 'none';
+            document.getElementById('roadmap-section').style.display = 'none';
+            document.getElementById('insights-section').style.display = 'none';
+            
+            await loadDashboard();
+        }
+
+        async function exportRoadmap(format) {
+            try {
+                const response = await fetch(`/api/pm/export/${format}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Create download link
+                    const blob = new Blob([data.content], { 
+                        type: format === 'json' ? 'application/json' : 'text/markdown' 
+                    });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    alert(`✅ Roadmap exported as ${data.filename}`);
+                } else {
+                    alert(`❌ Export failed: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                alert(`❌ Export failed: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
