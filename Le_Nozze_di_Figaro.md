@@ -20,7 +20,6 @@
 | Presto, quel nastro!                                                                            | 快，把那丝带还来！                         |
 | O caro, o bello, o fortunato nastro!                                                            | 啊，亲爱的，漂亮的，幸运的丝带啊！                 |
 | Io non te 'l renderò che con la vita.                                                           | 除非我死，否则绝不还给你。                     |
-| Italiano                                                                                                        
 | Cos'è quest'insolenza?                                                                                          | 这是什么无礼行为？                               |
 | Eh, via, sta' cheta!                                                                                            | 哎呀，别说了，安静点！                             |
 | In ricompensa, poi, questa mia canzonetta io ti vo' dare.                                                       | 作为补偿，我想把这首小歌送给你。                        |
